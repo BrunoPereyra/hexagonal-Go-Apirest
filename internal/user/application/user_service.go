@@ -4,6 +4,7 @@ import (
 	"errors"
 	"hexagonal/internal/user/domain"
 	"hexagonal/internal/user/infrastructure/repository"
+	"hexagonal/pkg/auth"
 	"hexagonal/pkg/bcrypt"
 )
 
@@ -24,15 +25,43 @@ func CreateUser(username, password string) (*domain.User, error) {
 		// Otros campos...
 	}
 
-	findUser := repository.FindUser(user)
-
-	if findUser != "ok" {
-		return nil, errors.New("error find user or user exist")
+	exist, _, err := repository.FindUser(user)
+	if err != nil {
+		return nil, err
+	}
+	if exist != "no exist" {
+		return nil, errors.New("user exist")
 	}
 
-	repository.Save(user)
+	repository.CreateUser(user)
 
 	return user, nil
 }
 
 // Otros métodos y funcionalidad relacionados con la lógica de usuario.
+
+func Login(username, password string) (string, error) {
+	user := &domain.User{
+		Username:     username,
+		PasswordHash: password,
+	}
+	if len(user.PasswordHash) < 2 || len(user.Username) < 2 {
+		return "", errors.New("len(user.PasswordHash) < 2 || len(user.Username) < 2")
+	}
+	exist, userLogin, err := repository.FindUser(user)
+	if err != nil {
+		return "", err
+	}
+	if exist == "no exist" {
+		return "", errors.New("nameUser incorrect")
+	}
+	errDecodePassword := bcrypt.DecodePassword(userLogin.PasswordHash, user.PasswordHash)
+	if errDecodePassword != nil {
+		return "", errors.New("password error")
+	}
+	token, errTokenSigned := auth.CreateToken(user)
+	if errTokenSigned != nil {
+		return "", errTokenSigned
+	}
+	return token, nil
+}

@@ -13,6 +13,7 @@ func main() {
 
 	// Definir las rutas y los controladores correspondientes
 	app.Post("/userCreate", delivery.CreateUser)
+	app.Post("/login", delivery.Login)
 
 	// Iniciar el servidor
 	log.Fatal(app.Listen(":3001"))

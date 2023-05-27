@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"hexagonal/internal/user/domain"
 	"hexagonal/internal/user/infrastructure/database"
@@ -25,7 +26,7 @@ func NewUserRepository() *UserRepository {
 	}
 }
 
-func Save(user *domain.User) error {
+func CreateUser(user *domain.User) error {
 	r := NewUserRepository()
 	_, err := r.collection.InsertOne(context.Background(), user)
 	if err != nil {
@@ -34,19 +35,20 @@ func Save(user *domain.User) error {
 	return nil
 }
 
-func FindUser(user *domain.User) string {
+func FindUser(user *domain.User) (string, *domain.User, error) {
 	r := NewUserRepository()
 	findUser := bson.D{
 		{Key: "username", Value: user.Username},
 	}
 	var userExist domain.User
-	if err := r.collection.FindOne(context.TODO(), findUser).Decode(&userExist); err != nil {
+	err := r.collection.FindOne(context.TODO(), findUser).Decode(&userExist)
+	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return "ok"
+			return "no exist", nil, nil
 		} else {
-			return "exist user"
+			return "", nil, errors.New("internal Server error")
 		}
 	}
 
-	return "?"
+	return "exist", &userExist, nil
 }
