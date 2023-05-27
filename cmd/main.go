@@ -5,15 +5,18 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	"hexagonal/internal/user/delivery"
+	deliveryPost "hexagonal/internal/post/delivery"
+	deliveryUser "hexagonal/internal/user/delivery"
 )
 
 func main() {
 	app := fiber.New()
 
 	// Definir las rutas y los controladores correspondientes
-	app.Post("/userCreate", delivery.CreateUser)
-	app.Post("/login", delivery.Login)
+	app.Post("/userCreate", deliveryUser.CreateUser)
+	app.Post("/login", deliveryUser.Login)
+
+	app.Post("/CreatePost", deliveryPost.CreatePost)
 
 	// Iniciar el servidor
 	log.Fatal(app.Listen(":3001"))
