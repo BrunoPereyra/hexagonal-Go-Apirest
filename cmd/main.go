@@ -16,7 +16,7 @@ func main() {
 	app.Post("/userCreate", deliveryUser.CreateUser)
 	app.Post("/login", deliveryUser.Login)
 
-	app.Post("/CreatePost", deliveryPost.CreatePost)
+	app.Post("/UploadPost", deliveryPost.CreatePost)
 
 	// Iniciar el servidor
 	log.Fatal(app.Listen(":3001"))
