@@ -2,17 +2,15 @@ package application
 
 import (
 	"errors"
+	"hexagonal/internal/post/domain"
 	"hexagonal/internal/post/infrastructure/repository"
 	"mime/multipart"
 )
 
-func a() {
-}
-
-func CreatePost(fileHeader *multipart.FileHeader, TextPost string) (string, repository.Post, error) {
-	CreatePostRes, NewPost, errCreatePostRes := repository.CreatePost(TextPost, fileHeader)
+func CreatePost(fileHeader *multipart.FileHeader, Post *domain.Post) (string, *domain.Post, error) {
+	CreatePostRes, errCreatePostRes := repository.CreatePost(Post, fileHeader)
 	if errCreatePostRes != nil {
-		return "", repository.Post{}, errors.New(errCreatePostRes.Error())
+		return "", Post, errors.New(errCreatePostRes.Error())
 	}
-	return CreatePostRes, NewPost, nil
+	return CreatePostRes, Post, nil
 }

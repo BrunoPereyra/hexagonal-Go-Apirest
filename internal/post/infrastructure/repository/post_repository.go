@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"hexagonal/internal/post/domain"
 	"hexagonal/internal/post/infrastructure/database"
 	"hexagonal/pkg/cloudinary/processimage"
 	"mime/multipart"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -29,12 +31,7 @@ func NewUserRepository() *PostRepository {
 	}
 }
 
-type Post struct {
-	TextPost   string `json:"textPost" bson:"textPost"`
-	ImgPostUrl string `json:"imgPostUrl" bson:"imgPostUrl"`
-}
-
-func CreatePost(TextPost string, fileHeader *multipart.FileHeader) (string, Post, error) {
+func CreatePost(Post *domain.Post, fileHeader *multipart.FileHeader) (string, error) {
 
 	PostImageChanel := make(chan string)
 	errChanel := make(chan error)
@@ -43,19 +40,17 @@ func CreatePost(TextPost string, fileHeader *multipart.FileHeader) (string, Post
 	db := NewUserRepository()
 	defer db.client.Disconnect(context.TODO())
 
-	var NewPost Post
-	NewPost.TextPost = TextPost
-
 	select {
 	case PostImage := <-PostImageChanel:
-		NewPost.ImgPostUrl = PostImage
+		Post.ImgPostUrl = PostImage
+		Post.Likes = []primitive.ObjectID{}
 	case err := <-errChanel:
-		return "", Post{}, err
+		return "", err
 	}
 
-	_, err := db.collection.InsertOne(context.TODO(), NewPost)
+	_, err := db.collection.InsertOne(context.TODO(), Post)
 	if err != nil {
-		return "", Post{}, errors.New("error InsertOne")
+		return "", errors.New("error InsertOne")
 	}
-	return "ok", NewPost, nil
+	return "ok", nil
 }

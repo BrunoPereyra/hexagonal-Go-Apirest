@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"hexagonal/internal/user/domain"
 	"hexagonal/internal/user/infrastructure/database"
+	"hexagonal/pkg/cloudinary/processimage"
+	"mime/multipart"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -26,22 +28,34 @@ func NewUserRepository() *UserRepository {
 	}
 }
 
-func CreateUser(user *domain.User) error {
+func CreateUser(user domain.User, FileHeader *multipart.FileHeader) (domain.User, error) {
+	PostImageChanel := make(chan string)
+	errChanel := make(chan error)
+	go processimage.Processimage(FileHeader, PostImageChanel, errChanel)
+
 	r := NewUserRepository()
+	select {
+	case avatar := <-PostImageChanel:
+		user.Avatar = avatar
+	case err := <-errChanel:
+		return user, err
+	}
 	_, err := r.collection.InsertOne(context.Background(), user)
 	if err != nil {
-		return err
+		return user, err
 	}
-	return nil
+	return user, nil
+
 }
 
 func FindUser(user *domain.User) (string, *domain.User, error) {
 	r := NewUserRepository()
 	findUser := bson.D{
-		{Key: "username", Value: user.Username},
+		{Key: "nameuser", Value: user.NameUser},
 	}
 	var userExist domain.User
 	err := r.collection.FindOne(context.TODO(), findUser).Decode(&userExist)
+	fmt.Println(userExist.NameUser)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return "no exist", nil, nil

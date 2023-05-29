@@ -6,56 +6,63 @@ import (
 	"hexagonal/internal/user/infrastructure/repository"
 	"hexagonal/pkg/auth"
 	"hexagonal/pkg/bcrypt"
+	"mime/multipart"
 )
 
 // CreateUser crea un nuevo usuario.
-func CreateUser(username, password string) (*domain.User, error) {
-	// Lógica para crear un nuevo usuario, como validar datos, generar ID, encriptar contraseña, etc.
-	// Utiliza el repositorio de usuarios para persistir los datos.
-	if len(username) <= 2 {
-		return nil, errors.New("userName > 2a")
-	}
-	passwordhash, errPasswordHash := bcrypt.HashPassword(password)
-	if errPasswordHash != nil {
-		return nil, errors.New("passwordHashError")
-	}
-	user := &domain.User{
-		Username:     username,
-		PasswordHash: passwordhash,
-		// Otros campos...
-	}
+func CreateUser(userData *domain.UserModelValidator, fileHader *multipart.FileHeader) (domain.User, error) {
+	var modelNewUser domain.User
 
-	exist, _, err := repository.FindUser(user)
+	passwordhashChan := make(chan string)
+	go bcrypt.HashPassword(userData.Password, passwordhashChan)
+	modelNewUser.NameUser = userData.NameUser
+	exist, _, err := repository.FindUser(&modelNewUser)
 	if err != nil {
-		return nil, err
+		return modelNewUser, err
 	}
 	if exist != "no exist" {
-		return nil, errors.New("user exist")
+		return modelNewUser, errors.New("user exist")
 	}
 
-	repository.CreateUser(user)
+	passwordHash := <-passwordhashChan
+	if passwordHash == "errHash" {
+		return modelNewUser, errors.New("errHash password")
+	}
 
-	return user, nil
+	userData.Password = passwordHash
+
+	modelNewUser.FullName = userData.FullName
+	modelNewUser.NameUser = userData.NameUser
+	modelNewUser.PasswordHash = userData.Password
+	modelNewUser.Pais = userData.Pais
+	modelNewUser.Ciudad = userData.Ciudad
+	modelNewUser.Email = userData.Email
+	modelNewUser.Instagram = userData.Instagram
+	modelNewUser.Twitter = userData.Twitter
+	modelNewUser.Youtube = userData.Youtube
+
+	Newuser, errorNewuser := repository.CreateUser(modelNewUser, fileHader)
+	if errorNewuser != nil {
+		return Newuser, errorNewuser
+	}
+
+	return Newuser, nil
 }
 
 // Otros métodos y funcionalidad relacionados con la lógica de usuario.
 
-func Login(username, password string) (string, error) {
+func Login(UserLogin *domain.LoginValidatorStruct) (string, error) {
 	user := &domain.User{
-		Username:     username,
-		PasswordHash: password,
+		NameUser: UserLogin.NameUser,
 	}
-	if len(user.PasswordHash) < 2 || len(user.Username) < 2 {
-		return "", errors.New("len(user.PasswordHash) < 2 || len(user.Username) < 2")
-	}
-	exist, userLogin, err := repository.FindUser(user)
+	exist, user, err := repository.FindUser(user)
 	if err != nil {
 		return "", err
 	}
 	if exist == "no exist" {
 		return "", errors.New("nameUser incorrect")
 	}
-	errDecodePassword := bcrypt.DecodePassword(userLogin.PasswordHash, user.PasswordHash)
+	errDecodePassword := bcrypt.DecodePassword(user.PasswordHash, UserLogin.Password)
 	if errDecodePassword != nil {
 		return "", errors.New("password error")
 	}

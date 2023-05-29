@@ -4,6 +4,7 @@ import (
 	"hexagonal/internal/user/domain"
 	"log"
 	"os"
+	"time"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/joho/godotenv"
@@ -20,7 +21,8 @@ func CreateToken(user *domain.User) (string, error) {
 	}
 	Claims := jwt.MapClaims{
 		"_id":      user.ID,
-		"username": user.Username,
+		"nameuser": user.NameUser,
+		"exp":      time.Now().Add(time.Hour * 24).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims)
 	signedToken, errTokenSigned := token.SignedString([]byte(TOKENPASSWORD))
