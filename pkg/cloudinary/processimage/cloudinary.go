@@ -2,6 +2,7 @@ package processimage
 
 import (
 	"context"
+	"fmt"
 	"hexagonal/config"
 	"mime/multipart"
 	"strings"
@@ -12,6 +13,7 @@ import (
 
 func Processimage(fileHeader *multipart.FileHeader, PostImageChanel chan string, errChanel chan error) {
 
+	fmt.Println(fileHeader, "~~~~~~~~~~~~~~~~")
 	CLOUDINARY_URL := config.CLOUDINARY_URL()
 	if CLOUDINARY_URL == "" {
 		CLOUDINARY_URL = "cloudinary://843737794533519:CVj4VI4oIy6vCehUuRqOc27Iq-I@depcty8j1"
@@ -30,7 +32,6 @@ func Processimage(fileHeader *multipart.FileHeader, PostImageChanel chan string,
 		if errcldService != nil || !strings.HasPrefix(resp.SecureURL, "https://") {
 			errChanel <- errcldService
 		}
-
 		PostImageChanel <- resp.SecureURL
 	} else {
 		PostImageChanel <- ""
