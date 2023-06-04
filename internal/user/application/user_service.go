@@ -18,15 +18,15 @@ func CreateUser(userData *domain.UserModelValidator, fileHader *multipart.FileHe
 	modelNewUser.NameUser = userData.NameUser
 	exist, _, err := repository.FindUser(&modelNewUser)
 	if err != nil {
-		return modelNewUser, err
+		return domain.User{}, err
 	}
 	if exist != "no exist" {
-		return modelNewUser, errors.New("user exist")
+		return domain.User{}, errors.New("user exist")
 	}
 
 	passwordHash := <-passwordhashChan
 	if passwordHash == "errHash" {
-		return modelNewUser, errors.New("errHash password")
+		return domain.User{}, errors.New("errHash password")
 	}
 
 	userData.Password = passwordHash

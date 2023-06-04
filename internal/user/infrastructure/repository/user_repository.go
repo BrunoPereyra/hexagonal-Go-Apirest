@@ -38,11 +38,12 @@ func CreateUser(user domain.User, FileHeader *multipart.FileHeader) (domain.User
 	case avatar := <-PostImageChanel:
 		user.Avatar = avatar
 	case err := <-errChanel:
-		return user, err
+		fmt.Println(err, "{}{}{}{}{}{}{}")
+		return domain.User{}, err
 	}
 	_, err := r.collection.InsertOne(context.Background(), user)
 	if err != nil {
-		return user, err
+		return domain.User{}, err
 	}
 	return user, nil
 
